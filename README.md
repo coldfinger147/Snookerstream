@@ -49,6 +49,17 @@ sudo systemctl enable --now gsa-stream
 journalctl -u gsa-stream -f
 ```
 
+## Updates über GitHub
+
+Auf einem eingerichteten Pi (Anleitung: `ANLEITUNG-TEST.md`):
+
+```bash
+cd ~/Stream
+./update.sh               # neuesten Stand des aktuellen Branches holen
+./update.sh vorschlaege   # Testversion ausprobieren
+./update.sh main          # zurück auf den freigegebenen Stand
+```
+
 ## Bildqualität
 
 Beispiele aus der ursprünglichen Anleitung stehen in `README.original.md` (Filter „Natürlich“, „Snooker“, „Maximale Schärfe“ und Qualität 1080p, 2K, 4K).
