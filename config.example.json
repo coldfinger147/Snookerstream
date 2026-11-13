@@ -37,6 +37,7 @@
   "logoPath": "./logo.png",
   "logoHoehe": 120,
   "logoRand": 30,
+  "logoPosition": "oben-links",
   "cameraUrl": "http://192.168.178.203/flv?port=1935&app=bcs&stream=channel0_main.bcs&user=admin&password=KAMERA-PASSWORT",
   "streamQuality": {
     "width": 1920,

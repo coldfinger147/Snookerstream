@@ -16,14 +16,19 @@ class StreamManager {
         const rtmp =
             `${streamInfo.ingestUrl}/${streamInfo.streamKey}`;
 
-        // Festes Logo oben links: nur ein Einzelbild, wird einmal skaliert und dann
+        // Festes Logo in einer Ecke (logoPosition): nur ein Einzelbild, wird einmal skaliert und dann
         // in jedes Bild kopiert. Kostet kaum Rechenzeit (kein zweites Video, kein Chromium).
         const logo = config.logoPath && fs.existsSync(config.logoPath) ? config.logoPath : null;
         const logoHoehe = Math.round(Number(config.logoHoehe) || 120);
-        const logoRand = Math.round(Number(config.logoRand) || 30);
+        const randWert = Number(config.logoRand);
+        const logoRand = Math.round(Number.isFinite(randWert) && randWert >= 0 ? randWert : 30);
+        // Ecke: "oben-links" (Standard), "oben-rechts", "unten-links", "unten-rechts"
+        const ecke = String(config.logoPosition || "oben-links");
+        const logoX = ecke.endsWith("rechts") ? `W-w-${logoRand}` : `${logoRand}`;
+        const logoY = ecke.startsWith("unten") ? `H-h-${logoRand}` : `${logoRand}`;
         const overlayZiel = logo ? "[vo]" : "[v]";
         const logoFilter = logo
-            ? `;[2:v]scale=-1:${logoHoehe}[lg];[vo][lg]overlay=${logoRand}:${logoRand}:eof_action=repeat[v]`
+            ? `;[2:v]scale=-1:${logoHoehe}[lg];[vo][lg]overlay=${logoX}:${logoY}:eof_action=repeat[v]`
             : "";
 
         return [
