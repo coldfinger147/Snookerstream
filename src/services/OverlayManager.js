@@ -145,6 +145,12 @@ class OverlayManager {
             }
         );
 
+        // Viewport vor dem Laden setzen, damit die Seite gleich in 1920 × 1080 aufbaut
+        await this.page.setViewport({
+            width: 1920,
+            height: 1080
+        });
+
         await this.page.goto(
             config.liveScoreUrl,
             {
@@ -152,11 +158,6 @@ class OverlayManager {
                     "networkidle2"
             }
         );
-
-        await this.page.setViewport({
-            width: 1920,
-            height: 1080
-        });
 
         this.health.set(
             "browserRunning",
@@ -201,11 +202,19 @@ class OverlayManager {
 
         await this.page.screenshot({
             path: config.tempPath,
-            fullPage: false
+            fullPage: false,
+            omitBackground: config.overlayMode === "full"
         });
 
         this.health.set("overlayLastUpdate", Date.now());
         this.health.set("overlayRunning", true);
+
+        if (config.overlayMode === "full") {
+            // SnookerCloud-Overlay: ganze Seite mit durchsichtigem Hintergrund übernehmen
+            await fs.promises.rename(config.tempPath, config.overlayPath);
+            this.health.touchOverlay();
+            return;
+        }
 
         const width = 1920;
         const height = 100;

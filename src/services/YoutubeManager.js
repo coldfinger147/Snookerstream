@@ -117,14 +117,16 @@ class YoutubeManager {
         });
     }
 
-    async createStream() {
+    /** title: z. B. „13.11.2026 – Max Muster vs. Erika Beispiel – Tisch 3 – German Snooker Academy“ (von SnookerCloud). */
+    async createStream(title) {
         const youtube = this.getYoutube();
+        const name = String(title || "").trim().slice(0, 100) || `Tisch ${config.tableNum} - German Snooker Academy`;
 
         const streamRes = await youtube.liveStreams.insert({
             part: ["id", "snippet", "cdn", "status"],
             requestBody: {
                 snippet: {
-                    title: `Tisch ${config.tableNum} - German Snooker Academy`
+                    title: name
                 },
                 cdn: {
                     frameRate: "variable",
@@ -138,7 +140,7 @@ class YoutubeManager {
             part: ["id", "snippet", "contentDetails", "status"],
             requestBody: {
                 snippet: {
-                    title: `Tisch ${config.tableNum} - German Snooker Academy`,
+                    title: name,
                     scheduledStartTime: new Date().toISOString()
                 },
                 contentDetails: {
@@ -166,7 +168,8 @@ class YoutubeManager {
             streamId: streamRes.data.id,
             streamKey: streamRes.data.cdn.ingestionInfo.streamName,
             ingestUrl: streamRes.data.cdn.ingestionInfo.ingestionAddress,
-            broadcastId: broadcastRes.data.id
+            broadcastId: broadcastRes.data.id,
+            title: name
         };
     }
 }

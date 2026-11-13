@@ -28,14 +28,21 @@ const watchdog = new WatchdogManager(overlay, stream, health);
 
 let running = false;
 let streamInfo = null;
+// Wer hat gestartet? "snookercloud" = Tablet/SnookerCloud (Abruf), sonst Knopf auf dieser Seite oder Aufruf von außen
+let gestartetVon = null;
+let aktuellerTitel = null;
+let letzterFehler = 0;
 
 watchdog.start();
 
-async function start() {
+/** title: YouTube-Titel (von SnookerCloud), leer = „Tisch X - German Snooker Academy“. */
+async function start(title, von = "seite") {
     if (running) return;
     running = true;
+    gestartetVon = von;
+    aktuellerTitel = title || null;
 
-    logger.info("SYSTEM STARTING");
+    logger.info(`SYSTEM STARTING${title ? ` (${title})` : ""}`);
 
     try {
         await youtube.init();
@@ -44,7 +51,9 @@ async function start() {
 
         await camera.resetFocus();
 
-        streamInfo = await youtube.createStream();
+        streamInfo = await youtube.createStream(title);
+
+        watchdog.start();
 
         await stream.start(streamInfo);
 
@@ -56,6 +65,7 @@ async function start() {
 
     } catch (err) {
         logger.error("SYSTEM START FAILED", err);
+        letzterFehler = Date.now();
         running = false;
         await stop();
     }
@@ -70,6 +80,7 @@ async function stop() {
     logger.info("SYSTEM STOPPING");
 
     running = false;
+    gestartetVon = null;
 
     watchdog.stop();
 
@@ -270,15 +281,21 @@ setInterval(load, 2000);
     `);
 });
 
-app.get("/start", async (req, res) => {
-    await start();
-    res.send("starting");
-});
-
-app.get("/stop", async (req, res) => {
-    await stop();
-    res.send("stopping");
-});
+// Start dauert (YouTube, Chromium, Kamera) – sofort antworten, damit SnookerCloud und die Seite nicht warten.
+// Titel: ?title=… oder JSON {"title": "…"} (SnookerCloud schickt beides je nach Methode).
+const startHandler = (req, res) => {
+    const title = String(req.query.title || req.body?.title || "").trim();
+    start(title, req.query.title || req.body?.title ? "snookercloud" : "seite").catch(err => logger.error("Start failed", err));
+    res.json({ ok: true, message: running ? "Stream läuft bereits" : "Stream wird gestartet", title: title || null });
+};
+const stopHandler = (req, res) => {
+    stop().catch(err => logger.error("Stop failed", err));
+    res.json({ ok: true, message: "Stream wird gestoppt" });
+};
+app.get("/start", startHandler);
+app.post("/start", startHandler);
+app.get("/stop", stopHandler);
+app.post("/stop", stopHandler);
 
 app.get("/oauth2callback", async (req, res) => {
     try {
@@ -310,6 +327,42 @@ app.get("/status", (req, res) => {
         });
     }
 });
+
+// ---------------------------------------------------------------------------
+// Abruf bei SnookerCloud: Der Pi fragt selbst nach, ob an seinem Tisch gestreamt werden soll.
+// Damit muss SnookerCloud die Pis im Vereinsnetz nicht erreichen können.
+// config.json: "snookerCloud": { "url": "https://snookercloud.com", "token": "<TV-Schlüssel>", "tisch": 3, "sekunden": 5 }
+// ---------------------------------------------------------------------------
+const sc = config.snookerCloud;
+if (sc?.url && sc?.token) {
+    const base = String(sc.url).replace(/\/+$/, "");
+    const tisch = sc.tisch || config.tableNum;
+    const url = `${base}/api/turnier-public/stream/${encodeURIComponent(sc.token)}/${tisch}?pi=1`;
+    logger.info(`SnookerCloud-Abruf aktiv: Tisch ${tisch}`);
+    const abrufen = async () => {
+        try {
+            const res = await fetch(url, { cache: "no-store" });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            const einheit = data?.einheit;
+            // Nach einem fehlgeschlagenen Start eine Minute warten, statt ständig neue YouTube-Streams anzulegen
+            if (einheit && !running && Date.now() - letzterFehler > 60000) {
+                await start(einheit.titel, "snookercloud");
+            } else if (!einheit && running && gestartetVon === "snookercloud") {
+                await stop();
+            } else if (einheit && running && gestartetVon === "snookercloud" && einheit.titel !== aktuellerTitel) {
+                // Neue Einheit am Tisch (z. B. neues Match): neues Video mit neuem Titel
+                await stop();
+                await sleep(3000);
+                await start(einheit.titel, "snookercloud");
+            }
+        } catch (err) {
+            logger.warn(`SnookerCloud-Abruf fehlgeschlagen: ${err.message}`);
+        }
+        setTimeout(abrufen, Math.max(3, Number(sc.sekunden) || 5) * 1000);
+    };
+    setTimeout(abrufen, 3000);
+}
 
 app.listen(config.port, () => {
     logger.info(`Server running on port ${config.port}`);

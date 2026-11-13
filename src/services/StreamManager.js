@@ -6,6 +6,7 @@ class StreamManager {
     constructor(health) {
         this.health = health;
         this.process = null;
+        this.lastInfo = null;
     }
 
     buildArgs(streamInfo) {
@@ -31,8 +32,12 @@ class StreamManager {
             `eq=contrast=${vf.contrast}:brightness=${vf.brightness}:saturation=${vf.saturation},` +
             `unsharp=${vf.unsharpLumaX}:${vf.unsharpLumaY}:${vf.unsharpLumaAmount}:` +
             `${vf.unsharpChromaX}:${vf.unsharpChromaY}:${vf.unsharpChromaAmount}[bg];` +
-            `[1:v]scale=${Math.floor(q.width * config.overlayScale)}:-1[ov];` +
-            `[bg][ov]overlay=(W-w)/2:H-h-10[v]`,
+            // overlayMode "full": SnookerCloud-Overlay (1920 × 1080, durchsichtig, Logo oben + Livescore unten) über das ganze Bild
+            // sonst wie bisher: nur die Punkteleiste (oberste 100 px der Seite) unten einblenden
+            (config.overlayMode === "full"
+                ? `[1:v]scale=${q.width}:${q.height}[ov];[bg][ov]overlay=0:0[v]`
+                : `[1:v]scale=${Math.floor(q.width * config.overlayScale)}:-1[ov];` +
+                  `[bg][ov]overlay=(W-w)/2:H-h-10[v]`),
 
 
             "-map", "[v]",
@@ -55,7 +60,7 @@ class StreamManager {
             "-bufsize", `${q.bufsize}k`,
 
             "-c:a", "aac",
-            "-b:a", `${q.maxrate}k`,
+            "-b:a", `${q.audioBitrate || 128}k`,
 
             "-f", "flv",
 
@@ -63,7 +68,12 @@ class StreamManager {
         ];
     }
 
-    start(streamInfo) {
+    start(streamInfo = this.lastInfo) {
+        if (!streamInfo) {
+            logger.error("FFmpeg: keine Stream-Info zum Starten");
+            return;
+        }
+        this.lastInfo = streamInfo;
         const args = this.buildArgs(streamInfo);
 
         logger.info("FFmpeg starting");
@@ -87,10 +97,12 @@ class StreamManager {
 
     stop() {
         if (this.process) this.process.kill("SIGINT");
+        this.process = null;
         this.health.set("ffmpegRunning", false);
+        this.health.set("ffmpegLastStart", null);
     }
 
-    restartManual(streamInfo) {
+    restartManual(streamInfo = this.lastInfo) {
         this.stop();
         return this.start(streamInfo);
     }
