@@ -129,3 +129,20 @@ In `config.json` ergänzen:
 - `logoRand` ist der Abstand zum Bildrand.
 
 Ohne `logoPath` läuft alles wie bisher. Danach den Dienst neu starten, z. B. mit `./update.sh vorschlaege`.
+
+## Verwaltung aus SnookerCloud (Updates per Knopf)
+
+Ab dem Zweig `vorschlaege` kann SnookerCloud Version und Zustand jedes Pi anzeigen (Zweig, Stand, CPU-Temperatur, Last, ob gerade gestreamt wird) und Updates starten. Einrichtung je Pi, einmalig:
+
+1. In SnookerCloud unter *Turniere → Tische & TV → Livestream an den Tischen → Stream-Pis verwalten* beim Tisch auf **Schlüssel erzeugen** tippen und den Schlüssel kopieren.
+2. Auf dem Pi in `config.json` eintragen:
+   ```json
+   "verwaltungSchluessel": "der-kopierte-schluessel",
+   ```
+3. `pm2 restart app`, oder bei systemd `sudo systemctl restart gsa-stream`.
+
+Sicherheit:
+- Ohne Schlüssel ist die Verwaltung aus.
+- Erlaubt ist nur der Wechsel auf die Zweige `main` und `vorschlaege` (änderbar mit `"updateZweige"`), keine beliebigen Befehle.
+- Solange ein Stream läuft, startet kein Update.
+- Das Protokoll des letzten Updates steht in `logs/update.log`.
