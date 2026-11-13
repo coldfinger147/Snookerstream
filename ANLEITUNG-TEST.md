@@ -16,7 +16,7 @@ Die Zahl in der zweiten Spalte ist die Prozessnummer. Damit:
 sudo ls -l /proc/<Prozessnummer>/cwd
 ```
 
-Das zeigt den Ordner der Software. Im Folgenden steht dafür `~/Stream`, setz den echten Ordner ein. Wie die Software startet:
+Das zeigt den Ordner der Software (an Tisch 3: `/home/pi/Desktop/Stream`, Start über pm2 als „app“). Im Folgenden steht dafür `~/Stream`, setz den echten Ordner ein, z. B. `~/Desktop/Stream`. Wie die Software startet:
 
 ```bash
 systemctl list-units --type=service | grep -i -E "stream|node|gsa"
