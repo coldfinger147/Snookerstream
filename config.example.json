@@ -1,0 +1,45 @@
+{
+  "port": 3555,
+  "camera": {
+    "type": "flv",
+    "host": "192.168.178.203",
+    "port": 1935,
+    "path": "channel0_ext.bcs",
+    "username": "admin",
+    "password": "KAMERA-PASSWORT"
+  },
+  "cameraIp": "192.168.178.203",
+  "cameraUser": "admin",
+  "cameraPassword": "KAMERA-PASSWORT",
+  "overlayDir": "./overlay",
+  "overlayPath": "./overlay/overlay.png",
+  "tempPath": "./overlay/overlay_temp.png",
+  "liveScoreUrl": "https://snookercloud.com/stream?t=TV-SCHLUESSEL&tisch=3&leiste=1",
+  "backendUrl": "https://srv.german-snooker-academy.de/api/v1/youtube/register-stream",
+  "credentialsPath": "./client_secret.json",
+  "tokenPath": "./token.json",
+  "tableNum": "3",
+  "redirect": "192.168.178.103",
+  "videoFilters": {
+    "contrast": 1.0,
+    "brightness": 0.01,
+    "saturation": 1.0,
+    "unsharpLumaX": 5,
+    "unsharpLumaY": 5,
+    "unsharpLumaAmount": 0.0,
+    "unsharpChromaX": 5,
+    "unsharpChromaY": 5,
+    "unsharpChromaAmount": 0.0
+  },
+  "overlayScale": 0.95,
+  "cameraUrl": "http://192.168.178.203/flv?port=1935&app=bcs&stream=channel0_main.bcs&user=admin&password=KAMERA-PASSWORT",
+  "streamQuality": {
+    "width": 1920,
+    "height": 1080,
+    "bitrate": 5000,
+    "maxrate": 5000,
+    "bufsize": 7500,
+    "fps": 16,
+    "audioBitrate": 128
+  }
+}

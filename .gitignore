@@ -1,0 +1,9 @@
+# Zugangsdaten bleiben nur auf dem Pi
+config.json
+client_secret.json
+token.json
+node_modules/
+overlay/
+logs/
+.DS_Store
+._*

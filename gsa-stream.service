@@ -1,0 +1,18 @@
+# systemd-Dienst für die Stream-Software (ein Pi je Tisch)
+# Einrichten: siehe README.md, Abschnitt „Als Dienst einrichten“
+[Unit]
+Description=GSA Stream Tisch
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/Stream
+ExecStart=/usr/bin/node src/app.js
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
