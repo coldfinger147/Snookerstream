@@ -28,8 +28,9 @@ export default {
 
     tempPath: path.resolve(rootDir, config.tempPath),
 
-    // Optional: festes Logo oben links im Bild (PNG mit durchsichtigem Hintergrund)
+    // Optional: feste Logos in den Ecken des Bildes (PNG), Ecke über logoPosition / logo2Position
     logoPath: config.logoPath ? path.resolve(rootDir, config.logoPath) : null,
+    logo2Path: config.logo2Path ? path.resolve(rootDir, config.logo2Path) : null,
 
     credentialsPath: path.resolve(
         rootDir,

@@ -122,12 +122,15 @@ In `config.json` ergänzen:
 "logoPath": "./logo.png",
 "logoHoehe": 120,
 "logoRand": 30,
-"logoPosition": "oben-links"
+"logoPosition": "oben-rechts",
+"logo2Path": "./logo-snookercloud.png",
+"logo2Position": "oben-links"
 ```
 
 - `logo.png` (GSA-Logo mit durchsichtigem Hintergrund) liegt im Repo.
 - `logoHoehe` ist die Höhe in Pixeln bei 1920 × 1080.
 - `logoRand` ist der Abstand zum Bildrand in Pixeln (0 = direkt in der Ecke).
+- `logo2Path` / `logo2Position`: ein zweites Logo (z. B. SnookerCloud oben links), gleiche Höhe und gleicher Rand. Weglassen, wenn nur ein Logo gewünscht ist.
 - `logoPosition` ist die Ecke: `oben-links` (Standard), `oben-rechts`, `unten-links` oder `unten-rechts`. Unten liegt die Score-Leiste, deshalb besser oben.
 
 Ohne `logoPath` läuft alles wie bisher. Danach den Dienst neu starten, z. B. mit `./update.sh vorschlaege`.
