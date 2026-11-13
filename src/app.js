@@ -285,8 +285,9 @@ setInterval(load, 2000);
 // Titel: ?title=… oder JSON {"title": "…"} (SnookerCloud schickt beides je nach Methode).
 const startHandler = (req, res) => {
     const title = String(req.query.title || req.body?.title || "").trim();
-    start(title, req.query.title || req.body?.title ? "snookercloud" : "seite").catch(err => logger.error("Start failed", err));
-    res.json({ ok: true, message: running ? "Stream läuft bereits" : "Stream wird gestartet", title: title || null });
+    const lief = running;
+    start(title, title ? "snookercloud" : "seite").catch(err => logger.error("Start failed", err));
+    res.json({ ok: true, message: lief ? "Stream läuft bereits" : "Stream wird gestartet", title: title || null });
 };
 const stopHandler = (req, res) => {
     stop().catch(err => logger.error("Stop failed", err));
