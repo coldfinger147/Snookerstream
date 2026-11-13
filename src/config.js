@@ -28,6 +28,9 @@ export default {
 
     tempPath: path.resolve(rootDir, config.tempPath),
 
+    // Optional: festes Logo oben links im Bild (PNG mit durchsichtigem Hintergrund)
+    logoPath: config.logoPath ? path.resolve(rootDir, config.logoPath) : null,
+
     credentialsPath: path.resolve(
         rootDir,
         config.credentialsPath

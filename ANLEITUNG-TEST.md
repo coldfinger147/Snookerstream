@@ -111,3 +111,21 @@ cd ~/Stream && ./update.sh
 ```
 
 Neue Änderungen kommen immer erst in einen eigenen Branch, werden an einem Tisch getestet und dann nach `main` übernommen.
+
+## Logo oben links im Bild
+
+Ab dem Zweig `vorschlaege` kann der Pi ein festes Logo oben links einblenden. Das Logo ist ein Einzelbild. FFmpeg skaliert es einmal und kopiert es dann in jedes Bild, deshalb braucht es kaum zusätzliche Rechenzeit.
+
+In `config.json` ergänzen:
+
+```json
+"logoPath": "./logo.png",
+"logoHoehe": 120,
+"logoRand": 30
+```
+
+- `logo.png` (GSA-Logo mit durchsichtigem Hintergrund) liegt im Repo.
+- `logoHoehe` ist die Höhe in Pixeln bei 1920 × 1080.
+- `logoRand` ist der Abstand zum Bildrand.
+
+Ohne `logoPath` läuft alles wie bisher. Danach den Dienst neu starten, z. B. mit `./update.sh vorschlaege`.

@@ -1,4 +1,5 @@
 import { spawn } from "child_process";
+import fs from "fs";
 import config from "../config.js";
 import logger from "../utils/logger.js";
 
@@ -15,6 +16,16 @@ class StreamManager {
         const rtmp =
             `${streamInfo.ingestUrl}/${streamInfo.streamKey}`;
 
+        // Festes Logo oben links: nur ein Einzelbild, wird einmal skaliert und dann
+        // in jedes Bild kopiert. Kostet kaum Rechenzeit (kein zweites Video, kein Chromium).
+        const logo = config.logoPath && fs.existsSync(config.logoPath) ? config.logoPath : null;
+        const logoHoehe = Math.round(Number(config.logoHoehe) || 120);
+        const logoRand = Math.round(Number(config.logoRand) || 30);
+        const overlayZiel = logo ? "[vo]" : "[v]";
+        const logoFilter = logo
+            ? `;[2:v]scale=-1:${logoHoehe}[lg];[vo][lg]overlay=${logoRand}:${logoRand}:eof_action=repeat[v]`
+            : "";
+
         return [
 
             "-fflags", "+genpts",
@@ -27,6 +38,8 @@ class StreamManager {
             "-f", "image2",
             "-i", config.overlayPath,
 
+            ...(logo ? ["-i", logo] : []),
+
             "-filter_complex",
             `[0:v]scale=${q.width}:${q.height}:flags=lanczos,` +
             `eq=contrast=${vf.contrast}:brightness=${vf.brightness}:saturation=${vf.saturation},` +
@@ -35,9 +48,10 @@ class StreamManager {
             // overlayMode "full": SnookerCloud-Overlay (1920 × 1080, durchsichtig, Logo oben + Livescore unten) über das ganze Bild
             // sonst wie bisher: nur die Punkteleiste (oberste 100 px der Seite) unten einblenden
             (config.overlayMode === "full"
-                ? `[1:v]scale=${q.width}:${q.height}[ov];[bg][ov]overlay=0:0[v]`
+                ? `[1:v]scale=${q.width}:${q.height}[ov];[bg][ov]overlay=0:0${overlayZiel}`
                 : `[1:v]scale=${Math.floor(q.width * config.overlayScale)}:-1[ov];` +
-                  `[bg][ov]overlay=(W-w)/2:H-h-10[v]`),
+                  `[bg][ov]overlay=(W-w)/2:H-h-10${overlayZiel}`) +
+            logoFilter,
 
 
             "-map", "[v]",
