@@ -10,6 +10,7 @@ cd "$(dirname "$0")"
 ZIEL="${1:-$(git rev-parse --abbrev-ref HEAD)}"
 
 if curl -s --max-time 3 http://localhost:3555/status | grep -q '"streamRunning":true'; then
+  if [ "${UPDATE_AUTOMATISCH:-}" = "1" ]; then echo "Gerade läuft ein Stream. Update abgebrochen."; exit 1; fi
   read -r -p "Achtung: Gerade läuft ein Stream. Trotzdem aktualisieren und neu starten? (j/n) " antwort
   [ "$antwort" = "j" ] || { echo "Abgebrochen."; exit 1; }
 fi

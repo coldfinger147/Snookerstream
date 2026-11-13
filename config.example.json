@@ -1,5 +1,7 @@
 {
   "port": 3555,
+  "verwaltungSchluessel": "HIER-EIN-LANGES-GEHEIMNIS-AUS-SNOOKERCLOUD",
+  "updateZweige": ["main", "vorschlaege"],
   "camera": {
     "type": "flv",
     "host": "192.168.178.203",

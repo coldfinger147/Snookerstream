@@ -12,6 +12,7 @@ import StreamManager from "./services/StreamManager.js";
 import WatchdogManager from "./services/WatchdogManager.js";
 import BackendManager from "./services/BackendManager.js";
 import CameraManager from "./services/CameraManager.js";
+import verwaltung from "./services/Verwaltung.js";
 
 const app = express();
 app.use(express.json());
@@ -315,6 +316,9 @@ app.get("/oauth2callback", async (req, res) => {
         res.status(500).send("Auth failed");
     }
 });
+
+// Verwaltung aus SnookerCloud (Version, Zustand, Update), geschützt mit verwaltungSchluessel
+verwaltung(app, () => running);
 
 app.get("/status", (req, res) => {
     try {
