@@ -322,7 +322,8 @@ verwaltung(app, () => running);
 
 app.get("/status", (req, res) => {
     try {
-        res.json(health.getStatus());
+        // videoId: YouTube-Video des laufenden Streams (SnookerCloud verlinkt es im Livescore)
+        res.json({ ...health.getStatus(), videoId: (running && streamInfo?.broadcastId) || null });
     } catch (err) {
         logger.error("Status route failed", err);
 
@@ -346,7 +347,9 @@ if (sc?.url && sc?.token) {
     logger.info(`SnookerCloud-Abruf aktiv: Tisch ${tisch}`);
     const abrufen = async () => {
         try {
-            const res = await fetch(url, { cache: "no-store" });
+            // Laufendes YouTube-Video mitmelden, damit SnookerCloud es auf der Livestream-Seite zeigen kann
+            const video = running && gestartetVon === "snookercloud" && streamInfo?.broadcastId;
+            const res = await fetch(video ? `${url}&video=${encodeURIComponent(video)}` : url, { cache: "no-store" });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             const einheit = data?.einheit;
