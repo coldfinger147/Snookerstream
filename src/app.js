@@ -56,6 +56,8 @@ async function start(title, von = "seite") {
 
         watchdog.start();
 
+        await stream.tischSchildVorbereiten();
+
         await stream.start(streamInfo);
 
         await backend.notify(streamInfo, "start");

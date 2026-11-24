@@ -132,6 +132,7 @@ In `config.json` ergänzen:
 - `logoRand` ist der Abstand zum Bildrand in Pixeln (0 = direkt in der Ecke).
 - `logo2Path` / `logo2Position`: ein zweites Logo (z. B. SnookerCloud oben links), gleiche Höhe und gleicher Rand. Weglassen, wenn nur ein Logo gewünscht ist.
 - `logoPosition` ist die Ecke: `oben-links` (Standard), `oben-rechts`, `unten-links` oder `unten-rechts`. Unten liegt die Score-Leiste, deshalb besser oben.
+- Tischschild: Unter dem zweiten Logo (SnookerCloud) steht automatisch ein Schild „TISCH 3“ in gleicher Breite, die Zahl kommt aus `tableNum`. Eigener Text mit `"tischSchildText": "Haupttisch"`, abschalten mit `"tischSchild": false`. Ohne `logo2Path` gibt es kein Schild.
 
 Ohne `logoPath` läuft alles wie bisher. Danach den Dienst neu starten, z. B. mit `./update.sh vorschlaege`.
 
