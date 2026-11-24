@@ -1,13 +1,28 @@
 import { spawn } from "child_process";
 import fs from "fs";
+import path from "path";
+import sharp from "sharp";
 import config from "../config.js";
 import logger from "../utils/logger.js";
+
+/** „Tisch 3“ aus liveScoreUrl (&tisch=3), sonst aus snookerCloud.tisch oder tableNum. */
+export function tischAusKonfig() {
+    let nr = "";
+    try {
+        nr = new URL(config.liveScoreUrl).searchParams.get("tisch") || "";
+    } catch {
+        // keine gültige URL: weiter mit den anderen Angaben
+    }
+    nr = String(nr || config.snookerCloud?.tisch || config.tableNum || "").trim();
+    return nr ? `Tisch ${nr}` : "";
+}
 
 class StreamManager {
     constructor(health) {
         this.health = health;
         this.process = null;
         this.lastInfo = null;
+        this.tischSchild = null;
     }
 
     buildArgs(streamInfo) {
@@ -28,14 +43,22 @@ class StreamManager {
             [config.logoPath, config.logoPosition || "oben-links"],
             [config.logo2Path, config.logo2Position || "oben-rechts"]
         ].filter(([p]) => p && fs.existsSync(p));
-        const overlayZiel = logos.length ? "[vo]" : "[v]";
-        const logoFilter = logos.map(([, position], i) => {
+        // Bilder, die nacheinander ins Video gelegt werden: Logos (auf logoHoehe skaliert) und das Tischschild (schon fertig groß)
+        const bilder = logos.map(([p, position]) => {
             const ecke = String(position);
-            const x = ecke.endsWith("rechts") ? `W-w-${logoRand}` : `${logoRand}`;
-            const y = ecke.startsWith("unten") ? `H-h-${logoRand}` : `${logoRand}`;
+            return {
+                pfad: p,
+                skalieren: `scale=-1:${logoHoehe}`,
+                x: ecke.endsWith("rechts") ? `W-w-${logoRand}` : `${logoRand}`,
+                y: ecke.startsWith("unten") ? `H-h-${logoRand}` : `${logoRand}`
+            };
+        });
+        if (this.tischSchild && fs.existsSync(this.tischSchild.pfad)) bilder.push({ ...this.tischSchild, skalieren: "null" });
+        const overlayZiel = bilder.length ? "[vo]" : "[v]";
+        const logoFilter = bilder.map((b, i) => {
             const ein = i === 0 ? "[vo]" : `[vl${i}]`;
-            const aus = i === logos.length - 1 ? "[v]" : `[vl${i + 1}]`;
-            return `;[${2 + i}:v]scale=-1:${logoHoehe}[lg${i}];${ein}[lg${i}]overlay=${x}:${y}:eof_action=repeat${aus}`;
+            const aus = i === bilder.length - 1 ? "[v]" : `[vl${i + 1}]`;
+            return `;[${2 + i}:v]${b.skalieren}[lg${i}];${ein}[lg${i}]overlay=${b.x}:${b.y}:eof_action=repeat${aus}`;
         }).join("");
 
         return [
@@ -50,7 +73,7 @@ class StreamManager {
             "-f", "image2",
             "-i", config.overlayPath,
 
-            ...logos.flatMap(([p]) => ["-i", p]),
+            ...bilder.flatMap((b) => ["-i", b.pfad]),
 
             "-filter_complex",
             `[0:v]scale=${q.width}:${q.height}:flags=lanczos,` +
@@ -92,6 +115,53 @@ class StreamManager {
 
             rtmp
         ];
+    }
+
+    /**
+     * Tischschild unter dem SnookerCloud-Logo (logo2Path), z. B. „TISCH 3“, gleich breit wie das Logo.
+     * Woher der Text kommt (erste passende Quelle):
+     *   1. tischSchildText in der config.json (fester Text, z. B. „Haupttisch“)
+     *   2. der Tischname von SnookerCloud, wenn SnookerCloud den Stream gestartet hat (tischName)
+     *   3. die Tischnummer aus liveScoreUrl (&tisch=3) – dieselbe Nummer, nach der die Score-Leiste ausgewählt wird
+     *   4. snookerCloud.tisch, sonst tableNum
+     * Abschalten mit "tischSchild": false. Wird einmal als PNG erzeugt (sharp) und dann wie die Logos ins Bild kopiert.
+     */
+    async tischSchildVorbereiten(tischName) {
+        this.tischSchild = null;
+        const text = String(config.tischSchildText || tischName || tischAusKonfig()).trim().toUpperCase();
+        if (config.tischSchild === false || !text || !config.logo2Path || !fs.existsSync(config.logo2Path)) return;
+        try {
+            const logoHoehe = Math.round(Number(config.logoHoehe) || 120);
+            const randWert = Number(config.logoRand);
+            const logoRand = Math.round(Number.isFinite(randWert) && randWert >= 0 ? randWert : 30);
+            const meta = await sharp(config.logo2Path).metadata();
+            const breite = Math.round((logoHoehe * meta.width) / meta.height);
+            const hoehe = Math.round(logoHoehe * 0.5);
+            const abstand = Math.round(logoHoehe * 0.09);
+            const radius = Math.round(logoHoehe * 0.09);
+            const schrift = Math.round(hoehe * 0.52);
+            const sicher = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            // Gleiches Grau wie der Hintergrund des SnookerCloud-Logos
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${breite}" height="${hoehe}">
+  <rect width="${breite}" height="${hoehe}" rx="${radius}" ry="${radius}" fill="#3d3d3d"/>
+  <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" fill="#e5e7eb"
+    font-family="Inter, 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif" font-weight="600"
+    font-size="${schrift}" letter-spacing="${Math.round(schrift * 0.14)}">${sicher}</text>
+</svg>`;
+            const pfad = path.join(config.overlayDir, "tisch-schild.png");
+            fs.mkdirSync(config.overlayDir, { recursive: true });
+            await sharp(Buffer.from(svg)).png().toFile(pfad);
+            const ecke = String(config.logo2Position || "oben-rechts");
+            this.tischSchild = {
+                pfad,
+                x: ecke.endsWith("rechts") ? `W-w-${logoRand}` : `${logoRand}`,
+                // unter dem Logo; steht das Logo unten, dann darüber
+                y: ecke.startsWith("unten") ? `H-h-${logoRand + logoHoehe + abstand}` : `${logoRand + logoHoehe + abstand}`
+            };
+            logger.info(`Tischschild „${text}“ erstellt`);
+        } catch (err) {
+            logger.error("Tischschild konnte nicht erstellt werden (Stream läuft ohne)", err);
+        }
     }
 
     start(streamInfo = this.lastInfo) {

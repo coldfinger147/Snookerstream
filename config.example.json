@@ -40,6 +40,8 @@
   "logoPosition": "oben-rechts",
   "logo2Path": "./logo-snookercloud.png",
   "logo2Position": "oben-links",
+  "tischSchild": true,
+  "tischSchildText": "",
   "cameraUrl": "http://192.168.178.203/flv?port=1935&app=bcs&stream=channel0_main.bcs&user=admin&password=KAMERA-PASSWORT",
   "streamQuality": {
     "width": 1920,
