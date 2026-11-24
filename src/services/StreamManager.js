@@ -5,6 +5,18 @@ import sharp from "sharp";
 import config from "../config.js";
 import logger from "../utils/logger.js";
 
+/** „Tisch 3“ aus liveScoreUrl (&tisch=3), sonst aus snookerCloud.tisch oder tableNum. */
+export function tischAusKonfig() {
+    let nr = "";
+    try {
+        nr = new URL(config.liveScoreUrl).searchParams.get("tisch") || "";
+    } catch {
+        // keine gültige URL: weiter mit den anderen Angaben
+    }
+    nr = String(nr || config.snookerCloud?.tisch || config.tableNum || "").trim();
+    return nr ? `Tisch ${nr}` : "";
+}
+
 class StreamManager {
     constructor(health) {
         this.health = health;
@@ -107,12 +119,16 @@ class StreamManager {
 
     /**
      * Tischschild unter dem SnookerCloud-Logo (logo2Path), z. B. „TISCH 3“, gleich breit wie das Logo.
-     * Text aus tischSchildText, sonst „Tisch <tableNum>“. Abschalten mit "tischSchild": false in der config.json.
-     * Wird einmal als PNG erzeugt (sharp) und dann wie die Logos ins Bild kopiert.
+     * Woher der Text kommt (erste passende Quelle):
+     *   1. tischSchildText in der config.json (fester Text, z. B. „Haupttisch“)
+     *   2. der Tischname von SnookerCloud, wenn SnookerCloud den Stream gestartet hat (tischName)
+     *   3. die Tischnummer aus liveScoreUrl (&tisch=3) – dieselbe Nummer, nach der die Score-Leiste ausgewählt wird
+     *   4. snookerCloud.tisch, sonst tableNum
+     * Abschalten mit "tischSchild": false. Wird einmal als PNG erzeugt (sharp) und dann wie die Logos ins Bild kopiert.
      */
-    async tischSchildVorbereiten() {
+    async tischSchildVorbereiten(tischName) {
         this.tischSchild = null;
-        const text = String(config.tischSchildText || (config.tableNum ? `Tisch ${config.tableNum}` : "")).trim().toUpperCase();
+        const text = String(config.tischSchildText || tischName || tischAusKonfig()).trim().toUpperCase();
         if (config.tischSchild === false || !text || !config.logo2Path || !fs.existsSync(config.logo2Path)) return;
         try {
             const logoHoehe = Math.round(Number(config.logoHoehe) || 120);

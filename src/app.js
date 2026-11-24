@@ -37,7 +37,7 @@ let letzterFehler = 0;
 watchdog.start();
 
 /** title: YouTube-Titel (von SnookerCloud), leer = „Tisch X - German Snooker Academy“. */
-async function start(title, von = "seite") {
+async function start(title, von = "seite", tischName = null) {
     if (running) return;
     running = true;
     gestartetVon = von;
@@ -56,7 +56,8 @@ async function start(title, von = "seite") {
 
         watchdog.start();
 
-        await stream.tischSchildVorbereiten();
+        // Tischschild unter dem SnookerCloud-Logo: Name von SnookerCloud, sonst Nummer aus der config.json
+        await stream.tischSchildVorbereiten(tischName);
 
         await stream.start(streamInfo);
 
@@ -357,14 +358,14 @@ if (sc?.url && sc?.token) {
             const einheit = data?.einheit;
             // Nach einem fehlgeschlagenen Start eine Minute warten, statt ständig neue YouTube-Streams anzulegen
             if (einheit && !running && Date.now() - letzterFehler > 60000) {
-                await start(einheit.titel, "snookercloud");
+                await start(einheit.titel, "snookercloud", einheit.tischName);
             } else if (!einheit && running && gestartetVon === "snookercloud") {
                 await stop();
             } else if (einheit && running && gestartetVon === "snookercloud" && einheit.titel !== aktuellerTitel) {
                 // Neue Einheit am Tisch (z. B. neues Match): neues Video mit neuem Titel
                 await stop();
                 await sleep(3000);
-                await start(einheit.titel, "snookercloud");
+                await start(einheit.titel, "snookercloud", einheit.tischName);
             }
         } catch (err) {
             logger.warn(`SnookerCloud-Abruf fehlgeschlagen: ${err.message}`);
